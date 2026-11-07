@@ -1,0 +1,466 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>RateBoom</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@500;600&display=swap">
+<style>
+  /* Layout: левый заголовок и макет карточки рейтинга справа, ниже строки услуг в духе прайс-листа, акцентная полоса с принципом и финальный блок контакта */
+  :root {
+    --bg: #F1F3F8;
+    --surface: #FFFFFF;
+    --fg: #0E1320;
+    --muted: #54607A;
+    --line: #D9DEEA;
+    --accent: #2F45FF;
+    --accent-fg: #FFFFFF;
+    --accent-soft: #E3E7FF;
+    --star: #F5A700;
+    --display: "Unbounded", "Arial Black", system-ui, sans-serif;
+    --body: "Onest", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0A0E1A;
+      --surface: #121827;
+      --fg: #E9EDF8;
+      --muted: #9AA6C2;
+      --line: #232C42;
+      --accent: #7F8DFF;
+      --accent-fg: #0A0E1A;
+      --accent-soft: #1A2250;
+      --star: #FFC233;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0A0E1A;
+    --surface: #121827;
+    --fg: #E9EDF8;
+    --muted: #9AA6C2;
+    --line: #232C42;
+    --accent: #7F8DFF;
+    --accent-fg: #0A0E1A;
+    --accent-soft: #1A2250;
+    --star: #FFC233;
+    color-scheme: dark;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--body);
+    font-size: 17px;
+    line-height: 1.6;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0 0 auto;
+    height: env(safe-area-inset-top, 0px);
+    background: var(--bg);
+    z-index: 10;
+  }
+  h1, h2, h3 { font-family: var(--display); font-weight: 600; line-height: 1.15; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+  p { margin: 0; }
+  a { color: inherit; }
+
+  .wrap {
+    width: 100%;
+    max-width: 1200px;
+    margin-inline: auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+
+  .eyebrow {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Header */
+  .site-header {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 5;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+  }
+  .site-header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 12px; }
+  .logo { display: inline-flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 600; font-size: 1.15rem; text-decoration: none; }
+  .logo svg { width: 28px; height: 28px; flex: none; }
+  .nav { display: flex; align-items: center; gap: 24px; }
+  .nav a.link { text-decoration: none; color: var(--muted); font-weight: 500; font-size: 0.95rem; }
+  .nav a.link:hover { color: var(--fg); }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 13px 22px; border-radius: 999px;
+    font: 600 1rem/1.2 var(--body);
+    text-decoration: none; border: 2px solid transparent; cursor: pointer;
+    transition: transform .15s ease, background-color .15s ease;
+  }
+  .btn svg { width: 20px; height: 20px; flex: none; }
+  .btn-primary { background: var(--accent); color: var(--accent-fg); }
+  .btn-primary:hover { transform: translateY(-2px); }
+  .btn-ghost { border-color: var(--line); color: var(--fg); background: transparent; }
+  .btn-ghost:hover { border-color: var(--fg); }
+  .btn-small { padding: 9px 16px; font-size: 0.92rem; }
+  .btn-on-accent { background: var(--accent-fg); color: var(--accent); }
+  .btn-on-accent:hover { transform: translateY(-2px); }
+
+  /* Hero */
+  .hero { padding-block: 56px 48px; }
+  .hero-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 56px; align-items: center; }
+  .hero h1 { font-size: clamp(1.8rem, 5.2vw, 3.5rem); margin-top: 16px; }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero .lead { margin-top: 22px; font-size: 1.15rem; color: var(--muted); max-width: 34em; }
+  .hero-actions { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 12px; }
+  .hero-note { margin-top: 18px; font-size: 0.92rem; color: var(--muted); }
+
+  /* Rating card mockup */
+  .rating-card { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 26px; min-width: 0; }
+  .rc-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .rc-name { font-weight: 600; }
+  .rc-where { font-size: 0.85rem; color: var(--muted); }
+  .rc-score { display: flex; align-items: center; gap: 18px; margin-top: 18px; }
+  .rc-num { font-family: var(--display); font-weight: 600; font-size: 3.4rem; line-height: 1; font-variant-numeric: tabular-nums; }
+  .stars { display: inline-flex; gap: 3px; color: var(--star); }
+  .stars svg { width: 22px; height: 22px; }
+  .rc-count { font-size: 0.88rem; color: var(--muted); margin-top: 4px; }
+  .bars { margin-top: 22px; display: grid; gap: 8px; }
+  .bar-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) 40px; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .bar-track { height: 8px; border-radius: 99px; background: var(--accent-soft); overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 99px; background: var(--accent); }
+  .bar-row span:last-child { text-align: right; }
+  .rc-reply { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 0.92rem; }
+  .rc-reply b { display: block; margin-bottom: 4px; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
+  .rc-caption { margin-top: 14px; font-size: 0.78rem; color: var(--muted); }
+
+  /* Platforms */
+  .platforms { border-block: 1px solid var(--line); padding-block: 22px; }
+  .platforms .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; }
+  .platform-list { display: flex; flex-wrap: wrap; gap: 10px; list-style: none; margin: 0; padding: 0; }
+  .platform-list li { padding: 7px 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-weight: 500; font-size: 0.95rem; }
+
+  /* Sections */
+  section { padding-block: 72px; }
+  .section-head { display: grid; gap: 14px; max-width: 40em; }
+  .section-head h2 { font-size: clamp(1.5rem, 3.6vw, 2.3rem); }
+  .section-head p { color: var(--muted); }
+
+  /* Services as price-list rows */
+  .rows { margin-top: 36px; border-top: 2px solid var(--fg); }
+  .row { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 12px 40px; padding-block: 26px; border-bottom: 1px solid var(--line); }
+  .row h3 { font-size: 1.15rem; }
+  .row p { color: var(--muted); }
+  .row ul { margin: 12px 0 0; padding-left: 1.1em; color: var(--muted); }
+  .row li { margin-top: 4px; }
+
+  /* Principle band */
+  .principle { background: var(--accent); color: var(--accent-fg); padding-block: 64px; }
+  .principle-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px 56px; align-items: start; }
+  .principle h2 { font-size: clamp(1.5rem, 3.6vw, 2.3rem); }
+  .principle p { font-size: 1.08rem; }
+  .principle p + p { margin-top: 14px; }
+
+  /* Process */
+  .steps { margin-top: 36px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; list-style: none; padding: 0; counter-reset: step; }
+  .steps li { counter-increment: step; padding-top: 18px; border-top: 2px solid var(--fg); }
+  .steps li::before { content: "Шаг " counter(step); display: block; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+  .steps h3 { font-size: 1.05rem; margin-bottom: 8px; }
+  .steps p { color: var(--muted); font-size: 0.97rem; }
+
+  /* FAQ */
+  .faq { margin-top: 32px; max-width: 46em; border-top: 1px solid var(--line); }
+  details { border-bottom: 1px solid var(--line); padding-block: 4px; }
+  summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 16px; font-weight: 600; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; font-family: var(--display); font-size: 1.3rem; color: var(--accent); flex: none; }
+  details[open] summary::after { content: "−"; }
+  details p { padding-bottom: 18px; color: var(--muted); max-width: 38em; }
+
+  /* Contact */
+  .contact { background: var(--surface); border-top: 1px solid var(--line); padding-block: 72px; }
+  .contact-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 32px 56px; align-items: center; }
+  .contact h2 { font-size: clamp(1.6rem, 4vw, 2.6rem); }
+  .contact .lead { margin-top: 16px; color: var(--muted); max-width: 32em; }
+  .contact-box { border: 1px solid var(--line); border-radius: 22px; padding: 26px; display: grid; gap: 16px; background: var(--bg); min-width: 0; }
+  .handle-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .handle { font-family: var(--display); font-weight: 500; font-size: 1.2rem; user-select: all; overflow-wrap: anywhere; }
+  .copy-state { font-size: 0.85rem; color: var(--muted); min-height: 1.3em; }
+
+  footer { padding-block: 28px; font-size: 0.88rem; color: var(--muted); border-top: 1px solid var(--line); background: var(--bg); }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; }
+
+  @media (max-width: 860px) {
+    .hero-grid, .principle-grid, .contact-grid { grid-template-columns: minmax(0, 1fr); }
+    .hero-grid { gap: 36px; }
+    .row { grid-template-columns: minmax(0, 1fr); }
+    .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .nav a.link { display: none; }
+    section { padding-block: 52px; }
+  }
+  @media (max-width: 520px) {
+    body { font-size: 16px; }
+    .steps { grid-template-columns: minmax(0, 1fr); }
+    .hero { padding-block: 36px 36px; }
+    .btn { width: 100%; }
+    .btn-small { width: auto; }
+    .hero-actions .btn { flex: 1 1 100%; }
+    .rating-card, .contact-box { padding: 20px; }
+    .rc-num { font-size: 2.8rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .btn { transition: none; }
+  }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-star" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.6l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.2 1.2-6.5L2.5 9.5l6.6-.9z"/></symbol>
+  <symbol id="i-tg" viewBox="0 0 24 24"><path fill="currentColor" d="M21.4 3.6L2.9 10.8c-1.2.5-1.2 1.2-.2 1.5l4.7 1.5 1.8 5.5c.2.6.1.8.8.8.5 0 .7-.2 1-.5l2.3-2.2 4.8 3.5c.9.5 1.5.2 1.7-.8l3.1-14.7c.3-1.3-.5-1.8-1.5-1.3zM8.5 13.2l9.8-6.2c.5-.3.9-.1.5.2l-8.1 7.3-.3 3.4z"/></symbol>
+</svg>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="#top" aria-label="RateBoom, на главную">
+      <svg viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="8" fill="var(--accent)"/><path fill="var(--accent-fg)" d="M14 5.5l2.4 5 5.5.8-4 3.9.9 5.5L14 18.1l-4.8 2.6.9-5.5-4-3.9 5.5-.8z"/></svg>
+      RateBoom
+    </a>
+    <nav class="nav" aria-label="Разделы">
+      <a class="link" href="#services">Услуги</a>
+      <a class="link" href="#process">Как работаем</a>
+      <a class="link" href="#faq">Вопросы</a>
+      <a class="btn btn-primary btn-small" href="https://t.me/lashi_j" target="_blank" rel="noopener">
+        <svg><use href="#i-tg"/></svg>Написать
+      </a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <div class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <p class="eyebrow">Репутация на Яндекс Картах, Авито и маркетплейсах</p>
+        <h1>Рейтинг, которому <em>верят</em> покупатели</h1>
+        <p class="lead">RateBoom помогает бизнесу получать больше настоящих отзывов, грамотно отвечать на негатив и оформлять карточки так, чтобы клиент выбирал вас. Работаем аккуратно и без рисков для вашего аккаунта.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="https://t.me/lashi_j" target="_blank" rel="noopener"><svg><use href="#i-tg"/></svg>Уточнить в Telegram</a>
+          <a class="btn btn-ghost" href="#services">Что мы делаем</a>
+        </div>
+        <p class="hero-note">Пишите в Telegram: обсудим вашу площадку и подскажем, с чего начать.</p>
+      </div>
+
+      <aside class="rating-card" aria-label="Пример карточки организации">
+        <div class="rc-top">
+          <span class="rc-name">Ваша кофейня</span>
+          <span class="rc-where">Яндекс Карты</span>
+        </div>
+        <div class="rc-score">
+          <span class="rc-num">4,8</span>
+          <div>
+            <span class="stars" role="img" aria-label="Рейтинг 4,8 из 5">
+              <svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg>
+            </span>
+            <p class="rc-count">отзывы реальных гостей</p>
+          </div>
+        </div>
+        <div class="bars" aria-hidden="true">
+          <div class="bar-row"><span>5</span><div class="bar-track"><div class="bar-fill" style="width:78%"></div></div><span>78%</span></div>
+          <div class="bar-row"><span>4</span><div class="bar-track"><div class="bar-fill" style="width:15%"></div></div><span>15%</span></div>
+          <div class="bar-row"><span>3</span><div class="bar-track"><div class="bar-fill" style="width:4%"></div></div><span>4%</span></div>
+          <div class="bar-row"><span>2</span><div class="bar-track"><div class="bar-fill" style="width:2%"></div></div><span>2%</span></div>
+          <div class="bar-row"><span>1</span><div class="bar-track"><div class="bar-fill" style="width:1%"></div></div><span>1%</span></div>
+        </div>
+        <div class="rc-reply">
+          <b>Ответ владельца</b>
+          Спасибо, что написали. Мы разобрались с очередью на кассе и добавили второго бариста по выходным.
+        </div>
+        <p class="rc-caption">Макет для примера, не реальные данные.</p>
+      </aside>
+    </div>
+  </div>
+
+  <div class="platforms">
+    <div class="wrap">
+      <span class="eyebrow">Площадки</span>
+      <ul class="platform-list">
+        <li>Яндекс Карты</li>
+        <li>Авито</li>
+        <li>Wildberries</li>
+        <li>Ozon</li>
+        <li>2ГИС</li>
+        <li>и другие</li>
+      </ul>
+    </div>
+  </div>
+
+  <section id="services">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Услуги</p>
+        <h2>Что мы делаем для вашей репутации</h2>
+        <p>Берём на себя рутину вокруг отзывов, чтобы вы занимались бизнесом. Стоимость зависит от площадок и объёма работы, поэтому считаем её индивидуально.</p>
+      </div>
+      <div class="rows">
+        <div class="row">
+          <h3>Сбор отзывов у реальных клиентов</h3>
+          <div>
+            <p>Делаем так, чтобы довольным клиентам было просто оставить отзыв.</p>
+            <ul>
+              <li>QR-коды и короткие ссылки на вашу карточку</li>
+              <li>Тексты сообщений для рассылки после покупки или визита</li>
+              <li>Памятки для персонала, как попросить отзыв</li>
+            </ul>
+          </div>
+        </div>
+        <div class="row">
+          <h3>Ответы на отзывы</h3>
+          <div>
+            <p>Пишем вежливые, предметные ответы на похвалу и на критику. Покупатель видит, что бизнес слышит клиентов.</p>
+            <ul>
+              <li>Шаблоны под ваш тон общения</li>
+              <li>Разбор сложных и спорных отзывов</li>
+            </ul>
+          </div>
+        </div>
+        <div class="row">
+          <h3>Оформление карточек</h3>
+          <div>
+            <p>Приводим в порядок карточки на Яндекс Картах, Авито и маркетплейсах: описание, категории, фото, часы работы, контакты.</p>
+          </div>
+        </div>
+        <div class="row">
+          <h3>Мониторинг и отчёты</h3>
+          <div>
+            <p>Следим за новыми отзывами и динамикой рейтинга. Присылаем понятный отчёт и рекомендации, что улучшить в сервисе.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="principle">
+    <div class="wrap principle-grid">
+      <h2>Только настоящие отзывы</h2>
+      <div>
+        <p>Мы не пишем отзывы за клиентов и не покупаем их. Площадки находят такие отзывы, снижают рейтинг карточки и могут заблокировать аккаунт. Покупатели тоже замечают шаблонные тексты.</p>
+        <p>Мы строим рейтинг на реальном опыте ваших клиентов. Он растёт медленнее, зато держится.</p>
+      </div>
+    </div>
+  </div>
+
+  <section id="process">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Как работаем</p>
+        <h2>От первого сообщения до отчёта</h2>
+      </div>
+      <ol class="steps">
+        <li>
+          <h3>Разбор</h3>
+          <p>Смотрим ваши карточки и отзывы, находим слабые места.</p>
+        </li>
+        <li>
+          <h3>План</h3>
+          <p>Договариваемся о площадках, задачах и сроках.</p>
+        </li>
+        <li>
+          <h3>Запуск</h3>
+          <p>Оформляем карточки, настраиваем сбор отзывов, начинаем отвечать.</p>
+        </li>
+        <li>
+          <h3>Отчёт</h3>
+          <p>Показываем, как менялся рейтинг, и уточняем план.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="faq" style="padding-top:0">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Вопросы</p>
+        <h2>Частые вопросы</h2>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>Сколько это стоит?</summary>
+          <p>Цена зависит от количества площадок и объёма работы. Напишите нам в Telegram, расскажите о бизнесе, и мы назовём стоимость.</p>
+        </details>
+        <details>
+          <summary>Как быстро вырастет рейтинг?</summary>
+          <p>Скорость зависит от потока клиентов и качества сервиса. Первые изменения в карточках и ответах видны сразу, а рейтинг растёт по мере того, как приходят новые настоящие отзывы.</p>
+        </details>
+        <details>
+          <summary>Можно ли убрать плохой отзыв?</summary>
+          <p>Отзыв, который не нарушает правила площадки, удалить нельзя. Мы помогаем ответить на него так, чтобы это было видно будущим клиентам, и подсказываем, как исправить причину жалобы. Если отзыв нарушает правила, поможем подать жалобу.</p>
+        </details>
+        <details>
+          <summary>С какими площадками вы работаете?</summary>
+          <p>Яндекс Карты, Авито, маркетплейсы и другие площадки, где у клиентов есть отзывы. Если вашей площадки нет в списке, уточните в Telegram.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <div class="contact" id="contact">
+    <div class="wrap contact-grid">
+      <div>
+        <h2>Расскажите о вашей карточке</h2>
+        <p class="lead">Напишите, на какой площадке вы продаёте и что хотите улучшить. Ответим в Telegram и предложим первые шаги.</p>
+      </div>
+      <div class="contact-box">
+        <a class="btn btn-primary" href="https://t.me/lashi_j" target="_blank" rel="noopener"><svg><use href="#i-tg"/></svg>Написать в Telegram</a>
+        <div class="handle-row">
+          <span class="handle" id="handle">t.me/lashi_j</span>
+          <button class="btn btn-ghost btn-small" id="copy-btn" type="button">Скопировать</button>
+        </div>
+        <p class="copy-state" id="copy-state" role="status"></p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 RateBoom</span>
+    <span>Репутация на Яндекс Картах, Авито и маркетплейсах</span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var btn = document.getElementById('copy-btn');
+    var state = document.getElementById('copy-state');
+    var handle = document.getElementById('handle');
+    var link = 'https://t.me/lashi_j';
+    function fallback() {
+      try {
+        var r = document.createRange();
+        r.selectNodeContents(handle);
+        var s = window.getSelection();
+        s.removeAllRanges();
+        s.addRange(r);
+      } catch (e) {}
+      state.textContent = 'Ссылка выделена, скопируйте её вручную.';
+    }
+    btn.addEventListener('click', function () {
+      try {
+        navigator.clipboard.writeText(link).then(function () {
+          state.textContent = 'Ссылка скопирована.';
+        }, fallback);
+      } catch (e) { fallback(); }
+    });
+  })();
+</script>
+
+</body></html>
